@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MARKET REGIME PREDICTOR // QUANTITATIVE TERMINAL</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="terminal-container">
+    <!-- Top Header Bar -->
+    <header class="terminal-header">
+      <div class="header-left">
+        <span class="system-id">QUANT::REGIME_ENGINE_V1.0</span>
+        <span class="status-badge" id="system-status">SYS_ONLINE</span>
+        <span class="pipe">|</span>
+        <span class="host-info">FEED: PROD_REALTIME</span>
+      </div>
+      <div class="header-right">
+        <span id="current-clock" class="clock-display">00:00:00 UTC</span>
+        <span class="latency-display">LATENCY: 1.4ms</span>
+      </div>
+    </header>
+
+    <!-- Control Input Strip -->
+    <div class="control-strip">
+      <div class="input-group">
+        <label for="ticker-input">TARGET_SYMBOL:</label>
+        <div class="input-wrapper">
+          <input type="text" id="ticker-input" value="SPY" maxlength="8" spellcheck="false">
+          <div class="ticker-presets">
+            <button class="preset-btn active" data-ticker="SPY">SPY</button>
+            <button class="preset-btn" data-ticker="QQQ">QQQ</button>
+            <button class="preset-btn" data-ticker="NVDA">NVDA</button>
+            <button class="preset-btn" data-ticker="AAPL">AAPL</button>
+            <button class="preset-btn" data-ticker="BTC-USD">BTC</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="input-group">
+        <label for="period-select">LOOKBACK_WINDOW:</label>
+        <select id="period-select">
+          <option value="1y">1_YEAR (252_BARS)</option>
+          <option value="2y" selected>2_YEARS (504_BARS)</option>
+          <option value="5y">5_YEARS (1260_BARS)</option>
+        </select>
+      </div>
+
+      <div class="input-group">
+        <label for="regimes-select">REGIME_CLUSTERS:</label>
+        <select id="regimes-select">
+          <option value="3">3_REGIMES</option>
+          <option value="4" selected>4_REGIMES (STD)</option>
+          <option value="5">5_REGIMES</option>
+        </select>
+      </div>
+
+      <button id="execute-btn" class="execute-btn">EXECUTE_INFERENCE</button>
+    </div>
+
+    <!-- Telemetry Cards -->
+    <section class="telemetry-deck">
+      <div class="metric-card">
+        <div class="metric-label">ACTIVE_REGIME_STATE</div>
+        <div class="metric-value-large" id="active-regime-name">INITIALIZING...</div>
+        <div class="metric-sub" id="active-regime-confidence">CONFIDENCE: --%</div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-label">LAST_SPOT_PRICE</div>
+        <div class="metric-value" id="spot-price">$0.00</div>
+        <div class="metric-sub" id="spot-delta">DELTA: 0.00 (0.00%)</div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-label">RSI (14_PERIOD)</div>
+        <div class="metric-value" id="rsi-val">00.0</div>
+        <div class="metric-sub" id="rsi-state">OSCILLATOR: NEUTRAL</div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-label">ANNUALIZED_VOL_20D</div>
+        <div class="metric-value" id="vol-val">0.00%</div>
+        <div class="metric-sub" id="bb-squeeze">BB_SQUEEZE: NORMAL</div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-label">STRATEGY_SHARPE</div>
+        <div class="metric-value positive" id="strat-sharpe">0.00</div>
+        <div class="metric-sub" id="bench-sharpe">BENCHMARK: 0.00</div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-label">MAX_DRAWDOWN</div>
+        <div class="metric-value negative" id="max-dd">0.00%</div>
+        <div class="metric-sub" id="bench-dd">BENCHMARK: 0.00%</div>
+      </div>
+    </section>
+
+    <!-- Main Data Visualizer Grid -->
+    <main class="terminal-main-grid">
+      <!-- Left Column: Visual Charts -->
+      <section class="chart-section">
+        <div class="panel-header">
+          <span class="panel-title">// PRIMARY_CANVAS: REGIME_SEGMENTED_PRICE_TIMESERIES</span>
+          <span class="panel-legend">
+            <span class="legend-item"><span class="legend-bullet bull"></span>BULL</span>
+            <span class="legend-item"><span class="legend-bullet bear"></span>BEAR</span>
+            <span class="legend-item"><span class="legend-bullet highvol"></span>HIGH_VOL</span>
+            <span class="legend-item"><span class="legend-bullet lowvol"></span>CONSOLIDATION</span>
+          </span>
+        </div>
+        <div class="canvas-wrapper">
+          <canvas id="price-chart-canvas"></canvas>
+        </div>
+
+        <div class="panel-header sub-panel-header">
+          <span class="panel-title">// SECONDARY_CANVAS: QUANTITATIVE_EQUITY_CURVE (REGIME_ALLOC vs BUY_AND_HOLD)</span>
+        </div>
+        <div class="canvas-wrapper sub-canvas">
+          <canvas id="equity-chart-canvas"></canvas>
+        </div>
+      </section>
+
+      <!-- Right Column: Tables and Analytics -->
+      <aside class="sidebar-section">
+        <!-- Regime Breakdown Table -->
+        <div class="panel-box">
+          <div class="panel-header">
+            <span class="panel-title">// REGIME_DISTRIBUTION_PROFILE</span>
+          </div>
+          <table class="terminal-table" id="regime-table">
+            <thead>
+              <tr>
+                <th>REGIME</th>
+                <th>PCT</th>
+                <th>ANN_RET</th>
+                <th>ANN_VOL</th>
+                <th>SHARPE</th>
+              </tr>
+            </thead>
+            <tbody id="regime-table-body">
+              <tr><td colspan="5" class="table-empty">NO_DATA</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Transition Matrix -->
+        <div class="panel-box">
+          <div class="panel-header">
+            <span class="panel-title">// MARKOV_TRANSITION_MATRIX (P[i,j])</span>
+          </div>
+          <table class="terminal-table matrix-table" id="transition-table">
+            <thead>
+              <tr>
+                <th>T\T+1</th>
+                <th>S0</th>
+                <th>S1</th>
+                <th>S2</th>
+                <th>S3</th>
+              </tr>
+            </thead>
+            <tbody id="transition-table-body">
+              <tr><td colspan="5" class="table-empty">NO_DATA</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Feature Importances -->
+        <div class="panel-box">
+          <div class="panel-header">
+            <span class="panel-title">// RANDOM_FOREST_FEATURE_IMPORTANCE</span>
+          </div>
+          <div class="feature-bar-list" id="feature-list">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+
+        <!-- System Execution Console -->
+        <div class="panel-box console-box">
+          <div class="panel-header">
+            <span class="panel-title">// TELEMETRY_STREAM</span>
+            <button id="clear-console-btn" class="console-action-btn">CLEAR</button>
+          </div>
+          <div class="console-body" id="console-output">
+            <div class="log-entry system">[SYSTEM_BOOT] Quantitative Terminal v1.0.0 initialized.</div>
+          </div>
+        </div>
+      </aside>
+    </main>
+
+    <!-- Bottom Footer -->
+    <footer class="terminal-footer">
+      <span>LATENT_SPACE: GAUSSIAN_MIXTURE + RANDOM_FOREST_ENSEMBLE</span>
+      <span>BACKTEST_COST: 5_BPS_PER_TURNOVER</span>
+      <span>OPTIMIZATION: CONCAVE_LOG_UTILITY</span>
+    </footer>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
