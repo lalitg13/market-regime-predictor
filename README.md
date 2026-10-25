@@ -49,7 +49,7 @@ Market Regime Predictor downloads historical asset prices, computes technical in
 ### 1. Installation
 
 ```bash
-cd ~/Desktop/Workspace/MarketRegimePredictor
+cd ~/Desktop/Workspace/market-regime-predictor
 pip install -r requirements.txt
 ```
 
